@@ -1,4 +1,7 @@
 package com.mammer.botwithiatest.domaine.model;
 
-public class TradeSignal {
+public enum TradeSignal {
+    BUY,
+    SELL,
+    NONE
 }
