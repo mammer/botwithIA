@@ -3,6 +3,8 @@ package com.mammer.botwithiatest.application.strategy;
 import com.mammer.botwithiatest.domaine.model.Candle;
 import com.mammer.botwithiatest.domaine.model.LiquiditySweep;
 import com.mammer.botwithiatest.domaine.model.MarketTrend;
+import org.springframework.stereotype.Component;
+
 import java.util.List;
 import java.util.Optional;
 
@@ -16,6 +18,7 @@ import java.util.Optional;
  *  - If current candle takes out a swing low but closes back above it => BUY sweep
  */
 
+@Component
 public class LiquiditySweepDetector {
     /**
      * Main entry point.

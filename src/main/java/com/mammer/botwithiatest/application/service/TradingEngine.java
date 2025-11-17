@@ -2,7 +2,9 @@ package com.mammer.botwithiatest.application.service;
 
 import com.mammer.botwithiatest.domaine.model.TradeSignal;
 import com.mammer.botwithiatest.infrastructure.mt5.MT5BridgeClient;
+import org.springframework.stereotype.Service;
 
+@Service
 public class TradingEngine {
 
     private final MT5BridgeClient bridgeClient;

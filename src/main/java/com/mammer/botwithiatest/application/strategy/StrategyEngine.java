@@ -6,13 +6,15 @@ import com.mammer.botwithiatest.domaine.model.PredictionResult;
 import com.mammer.botwithiatest.domaine.model.SwingPoint;
 import com.mammer.botwithiatest.domaine.model.TradeSignal;
 import com.mammer.botwithiatest.domaine.model.LiquiditySweep;
-import com.mammer.botwithiatest.application.service.SignalService;
 import com.mammer.botwithiatest.application.service.MLIntegrationService;
+import com.mammer.botwithiatest.application.service.SignalService;
+import org.springframework.stereotype.Component;
 
 import java.util.Map;
 import java.util.List;
 import java.util.Optional;
 
+@Component
 public class StrategyEngine {
 
     private final SignalService signalService;
