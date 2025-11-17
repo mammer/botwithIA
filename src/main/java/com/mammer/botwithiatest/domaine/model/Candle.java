@@ -1,6 +1,7 @@
 package com.mammer.botwithiatest.domaine.model;
 
 import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 
 public class Candle {
     private LocalDateTime timestamp;
@@ -9,5 +10,38 @@ public class Candle {
     private double low;
     private double close;
     private double volume;
+
+    public Candle(ZonedDateTime timestamp, double open, double high, double low, double close, double volume) {
+        this.timestamp = timestamp.toLocalDateTime();
+        this.open = open;
+        this.high = high;
+        this.low = low;
+        this.close = close;
+        this.volume = volume;
+    }
+
+    public LocalDateTime getTimestamp() {
+        return timestamp;
+    }
+
+    public double getOpen() {
+        return open;
+    }
+
+    public double getHigh() {
+        return high;
+    }
+
+    public double getLow() {
+        return low;
+    }
+
+    public double getClose() {
+        return close;
+    }
+
+    public double getVolume() {
+        return volume;
+    }
 
 }

@@ -30,7 +30,16 @@
         <java.version>21</java.version>
         <timefold-solver.version>1.27.0</timefold-solver.version>
     </properties>
-    <dependencies>
+    <repositories>
+        <repository>
+            <id>central</id>
+            <url>https://repo.maven.apache.org/maven2</url>
+        </repository>
+        <repository>
+            <id>jitpack.io</id>
+            <url>https://jitpack.io</url>
+        </repository>
+    </repositories>    <dependencies>
         <!-- Spring Boot basics -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -53,16 +62,17 @@
         </dependency>
 
         <!-- TA library -->
-        <dependency>
-            <groupId>org.ta4j</groupId>
-            <artifactId>ta4j-core</artifactId>
-            <version>0.14</version>
-        </dependency>
+    <dependency>
+        <groupId>org.ta4j</groupId>
+        <artifactId>ta4j-core</artifactId>
+        <version>0.15</version>
+    </dependency>
 
         <!-- HTTP client -->
         <dependency>
             <groupId>com.squareup.okhttp3</groupId>
             <artifactId>okhttp</artifactId>
+            <version>4.12.0</version>
         </dependency>
 
         <!-- JSON -->
@@ -99,18 +109,6 @@
 
     <build>
         <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <annotationProcessorPaths>
-                        <path>
-                            <groupId>org.projectlombok</groupId>
-                            <artifactId>lombok</artifactId>
-                        </path>
-                    </annotationProcessorPaths>
-                </configuration>
-            </plugin>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>

@@ -3,20 +3,27 @@ package com.mammer.botwithiatest.application.usecase;
 import com.mammer.botwithiatest.application.service.SignalService;
 import com.mammer.botwithiatest.domaine.model.Candle;
 import com.mammer.botwithiatest.domaine.model.TradeSignal;
-import org.springframework.stereotype.Service;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
 
 import java.util.List;
 
-@Service
+@Component
+@RequiredArgsConstructor
 public class GenerateSignalUseCase {
 
     private final SignalService signalService;
 
-    public GenerateSignalUseCase(SignalService signalService) {
-        this.signalService = signalService;
-    }
+    /**
+     * Called by scheduler or controller to generate a trading signal
+     * based on recent market data.
+     */
+    public TradeSignal generate(List<Candle> candles) {
 
-    public TradeSignal execute(List<Candle> candles) {
+        if (candles == null || candles.size() < 50) {
+            return TradeSignal.NONE;
+        }
+        
         return signalService.generateSignal(candles);
     }
 }
