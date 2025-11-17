@@ -23,7 +23,7 @@ public class GenerateSignalUseCase {
         if (candles == null || candles.size() < 50) {
             return TradeSignal.NONE;
         }
-
+// update
         return signalService.generateSignal(candles);
     }
 }
