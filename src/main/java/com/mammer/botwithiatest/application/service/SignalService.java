@@ -4,12 +4,17 @@ import com.mammer.botwithiatest.domaine.model.Candle;
 import com.mammer.botwithiatest.domaine.model.TradeSignal;
 import org.springframework.stereotype.Service;
 import org.ta4j.core.BarSeries;
+import org.ta4j.core.BaseBar;
+import org.ta4j.core.BaseBarSeriesBuilder;
+import org.ta4j.core.indicators.ATRIndicator;
 import org.ta4j.core.indicators.EMAIndicator;
 import org.ta4j.core.indicators.RSIIndicator;
-import org.ta4j.core.indicators.ATRIndicator;
 import org.ta4j.core.indicators.helpers.ClosePriceIndicator;
 import org.ta4j.core.num.Num;
 
+import java.time.Duration;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.List;
 
 @Service
@@ -23,9 +28,14 @@ public class SignalService {
     /**
      * Main method: given a BarSeries (XAUUSD 15m, EURUSD, etc.), decide BUY / SELL / NONE.
      */
-    public TradeSignal generateSignal(List<Candle> series) {
-        // Safety: not enough candles → no trade
-        if (series == null || series.getBarCount() < SLOW_EMA + ATR_PERIOD + 5) {
+    public TradeSignal generateSignal(List<Candle> candles) {
+        if (candles == null || candles.size() < SLOW_EMA + ATR_PERIOD + 5) {
+            return TradeSignal.NONE;
+        }
+
+        BarSeries series = toBarSeries(candles);
+
+        if (series.getBarCount() < SLOW_EMA + ATR_PERIOD + 5) {
             return TradeSignal.NONE;
         }
 
@@ -36,7 +46,7 @@ public class SignalService {
         EMAIndicator fastEma = new EMAIndicator(closePrice, FAST_EMA);
         EMAIndicator slowEma = new EMAIndicator(closePrice, SLOW_EMA);
         RSIIndicator rsi = new RSIIndicator(closePrice, RSI_PERIOD);
-        ATRIndicator atr = new ATRIndicator(series, ATR_PERIOD); // <-- replaces TrueRangeIndicator
+        ATRIndicator atr = new ATRIndicator(series, ATR_PERIOD);
 
         Num fast = fastEma.getValue(endIndex);
         Num slow = slowEma.getValue(endIndex);
@@ -70,5 +80,25 @@ public class SignalService {
         ATRIndicator atr = new ATRIndicator(series, ATR_PERIOD);
         Num value = atr.getValue(series.getEndIndex());
         return value.doubleValue();
+    }
+
+    private BarSeries toBarSeries(List<Candle> candles) {
+        Duration barDuration = candles.size() > 1
+                ? Duration.between(candles.get(0).getTimestamp(), candles.get(1).getTimestamp())
+                : Duration.ofMinutes(1);
+
+        if (barDuration.isNegative() || barDuration.isZero()) {
+            barDuration = Duration.ofMinutes(1);
+        }
+
+        BarSeries series = new BaseBarSeriesBuilder().withName("candles").build();
+
+        for (Candle candle : candles) {
+            ZonedDateTime endTime = ZonedDateTime.of(candle.getTimestamp(), ZoneId.systemDefault());
+            series.addBar(new BaseBar(barDuration, endTime,
+                    candle.getOpen(), candle.getHigh(), candle.getLow(), candle.getClose(), candle.getVolume()));
+        }
+
+        return series;
     }
 }

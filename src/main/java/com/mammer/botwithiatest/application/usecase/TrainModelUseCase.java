@@ -3,11 +3,13 @@ package com.mammer.botwithiatest.application.usecase;
 import com.mammer.botwithiatest.domaine.model.Candle;
 import com.mammer.botwithiatest.domaine.repository.ModelStorageRepository;
 import com.mammer.botwithiatest.infrastructure.datasource.MarketDataProvider;
+import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+@Component
 public class TrainModelUseCase {
 
     private final MarketDataProvider marketDataProvider;
