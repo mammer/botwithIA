@@ -4,15 +4,18 @@ import com.mammer.botwithiatest.application.service.SignalService;
 import com.mammer.botwithiatest.domaine.model.Candle;
 import com.mammer.botwithiatest.domaine.model.TradeSignal;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
 import java.util.List;
 
-@Component
+@Service
 @RequiredArgsConstructor
 public class GenerateSignalUseCase {
 
-    private final SignalService signalService;
+    private  SignalService signalService;
+
 
     /**
      * Called by scheduler or controller to generate a trading signal
