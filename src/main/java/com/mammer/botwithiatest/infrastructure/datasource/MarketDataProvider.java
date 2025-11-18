@@ -1,12 +1,12 @@
 package com.mammer.botwithiatest.infrastructure.datasource;
 
 import com.mammer.botwithiatest.domaine.model.Candle;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
 
-@Component
+@Service
 public class MarketDataProvider {
 
     public List<Candle> fetchHistoricalData(String symbol, int lookback) {
