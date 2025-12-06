@@ -19,8 +19,17 @@ public class TradingEngine {
         this.applicationStatusService = applicationStatusService;
     }
 
-    public void executeTrade(TradeSignal signal, double equity, double stopLossPips, double stopLossPrice, double takeProfitPrice) {
+    public boolean executeTrade(TradeSignal signal, double equity, double stopLossPips, double stopLossPrice, double takeProfitPrice) {
+        validateInputs(signal, equity, stopLossPips, stopLossPrice, takeProfitPrice);
+
         double lotSize = riskManagementService.computePositionSize(equity, stopLossPips);
+        if (!riskManagementService.isWithinRiskLimits(equity, stopLossPips, lotSize)) {
+            return false;
+        }
+
+        if (!bridgeClient.isConnected()) {
+            return false;
+        }
 
         if (shouldBlockOrders(signal)) {
             throw new IllegalStateException("Demo period expired; live order placement is blocked.");
@@ -30,6 +39,18 @@ public class TradingEngine {
             case BUY -> bridgeClient.sendOrder("BUY", lotSize, stopLossPrice, takeProfitPrice);
             case SELL -> bridgeClient.sendOrder("SELL", lotSize, stopLossPrice, takeProfitPrice);
             case NONE -> bridgeClient.sendOrder("CLOSE", 0, 0, 0);
+        };
+    }
+
+    private void validateInputs(TradeSignal signal, double equity, double stopLossPips, double stopLossPrice, double takeProfitPrice) {
+        if (signal == null) {
+            throw new IllegalArgumentException("Trade signal cannot be null");
+        }
+        if (equity <= 0) {
+            throw new IllegalArgumentException("Equity must be greater than zero");
+        }
+        if (stopLossPips <= 0 || stopLossPrice <= 0 || takeProfitPrice <= 0) {
+            throw new IllegalArgumentException("Risk parameters must be greater than zero");
         }
     }
 

@@ -4,6 +4,17 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class MT5BridgeClient {
+
+    private boolean connected = true;
+
+    public boolean isConnected() {
+        return connected;
+    }
+
+    public void setConnected(boolean connected) {
+        this.connected = connected;
+    }
+
     public boolean sendOrder(String direction, double lotSize, double sl, double tp) {
         return sendMarketOrder("", direction, lotSize, sl, tp, 0);
     }
