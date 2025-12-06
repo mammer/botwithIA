@@ -49,7 +49,6 @@ class TradingEngineTest {
     void rejectsTradesWhenRiskLimitsExceeded() {
         when(riskManagementService.computePositionSize(anyDouble(), anyDouble())).thenReturn(3.0);
         when(riskManagementService.isWithinRiskLimits(anyDouble(), anyDouble(), anyDouble())).thenReturn(false);
-        when(bridgeClient.isConnected()).thenReturn(true);
 
         boolean executed = tradingEngine.executeTrade(TradeSignal.SELL, 5_000, 100, 1.0, 2.0);
 

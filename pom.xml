@@ -8,7 +8,7 @@
         <version>3.5.7</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
-    <groupId>com.example</groupId>
+    <groupId>com.mammer</groupId>
     <artifactId>BotWithIATest</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>BotWithIATest</name>
@@ -113,6 +113,7 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
+                    <mainClass>com.mammer.botwithiatest.BotWithIaTestApplication</mainClass>
                     <excludes>
                         <exclude>
                             <groupId>org.projectlombok</groupId>
