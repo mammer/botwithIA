@@ -16,7 +16,7 @@ import java.time.Instant;
 import java.util.Map;
 
 @RestController
-@RequestMapping
+@RequestMapping("/status")
 public class StatusController {
 
     private final ApplicationStatusService applicationStatusService;
@@ -25,7 +25,7 @@ public class StatusController {
         this.applicationStatusService = applicationStatusService;
     }
 
-    @GetMapping("/status")
+    @GetMapping
     public Map<String, Object> status() {
         Instant startedAt = applicationStatusService.getStartedAt();
         return Map.of(
@@ -36,7 +36,7 @@ public class StatusController {
         );
     }
 
-    @PostMapping("/admin/mode")
+    @PostMapping("/mode")
     public ResponseEntity<Map<String, Object>> updateMode(@RequestHeader(value = "X-Admin-Token", required = false) String token,
                                                           @RequestBody ModeUpdateRequest request) {
         if (!applicationStatusService.isAuthorized(token)) {
