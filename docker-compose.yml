@@ -1,17 +1,17 @@
 version: '3.8'
-
 services:
-  trading-bot:
-    image: eclipse-temurin:21-jdk
-    working_dir: /app
+  botwithia:
+    image: maven:3.9-eclipse-temurin-21
+    working_dir: /workspace/app
     command: ["./mvnw", "spring-boot:run"]
     volumes:
-      - ./:/app
+      - ./:/workspace/app
+    environment:
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL:-jdbc:h2:mem:tradingdb;DB_CLOSE_DELAY=-1;MODE=PostgreSQL}
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME:-sa}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:-}
+      TRADING_RISK_PERCENT: ${TRADING_RISK_PERCENT:-0.01}
+      TRADING_RISK_MAX_PERCENT: ${TRADING_RISK_MAX_PERCENT:-0.02}
+      TRADING_RISK_MIN_STOP_LOSS_PIPS: ${TRADING_RISK_MIN_STOP_LOSS_PIPS:-1}
     ports:
       - "8080:8080"
-      - "9090:9090"
-    environment:
-      DB_URL: ${DB_URL:-jdbc:h2:mem:tradingbot;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE}
-      DB_USERNAME: ${DB_USERNAME:-sa}
-      DB_PASSWORD: ${DB_PASSWORD:-}
-    tty: true

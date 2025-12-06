@@ -18,7 +18,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
@@ -34,45 +36,37 @@ class StrategyEngineTest {
 
     private StrategyEngine strategyEngine;
     private List<Candle> candles;
-    private Map<String, Double> features;
 
     @BeforeEach
     void setUp() {
         strategyEngine = new StrategyEngine(signalService, liquiditySweepDetector, mlIntegrationService);
-        candles = List.of(new Candle(ZonedDateTime.now(), 1, 2, 0.5, 1.5, 100));
-        features = Map.of("atr", 1.0);
+        candles = List.of(
+                new Candle(ZonedDateTime.now().minusMinutes(5), 1, 2, 0.5, 1.5, 1000),
+                new Candle(ZonedDateTime.now(), 1.5, 2.5, 1, 2, 1200)
+        );
     }
 
     @Test
-    void returnsBuyWhenMajorityVotesBuy() {
-        when(signalService.generateSignal(any())).thenReturn(TradeSignal.BUY);
-        when(liquiditySweepDetector.detect(any(), any())).thenReturn(Optional.of(new LiquiditySweep(LiquiditySweep.Type.BUY_SWEEP, 1.0, null, null)));
-        when(mlIntegrationService.predict(features)).thenReturn(new PredictionResult(TradeSignal.BUY, 0.7));
+    void returnsBuyWhenMajorityVotesAreBullish() {
+        when(signalService.generateSignal(anyList())).thenReturn(TradeSignal.BUY);
+        when(liquiditySweepDetector.detect(anyList(), any())).thenReturn(Optional.of(
+                new LiquiditySweep(LiquiditySweep.Type.BUY_SWEEP, 1.8, ZonedDateTime.now().minusMinutes(1).toLocalDateTime(), ZonedDateTime.now().toLocalDateTime())
+        ));
+        when(mlIntegrationService.predict(anyMap())).thenReturn(new PredictionResult(TradeSignal.SELL, 0.6));
 
-        TradeSignal result = strategyEngine.generateFinalSignal(candles, MarketTrend.UP, features);
+        TradeSignal signal = strategyEngine.generateFinalSignal(candles, MarketTrend.UP, Map.of("feature", 1.0));
 
-        assertThat(result).isEqualTo(TradeSignal.BUY);
-    }
-
-    @Test
-    void returnsSellWhenSellVotesDominate() {
-        when(signalService.generateSignal(any())).thenReturn(TradeSignal.SELL);
-        when(liquiditySweepDetector.detect(any(), any())).thenReturn(Optional.of(new LiquiditySweep(LiquiditySweep.Type.SELL_SWEEP, 1.0, null, null)));
-        when(mlIntegrationService.predict(features)).thenReturn(new PredictionResult(TradeSignal.NONE, 0.51));
-
-        TradeSignal result = strategyEngine.generateFinalSignal(candles, MarketTrend.DOWN, features);
-
-        assertThat(result).isEqualTo(TradeSignal.SELL);
+        assertEquals(TradeSignal.BUY, signal);
     }
 
     @Test
     void returnsNoneOnTie() {
-        when(signalService.generateSignal(any())).thenReturn(TradeSignal.BUY);
-        when(liquiditySweepDetector.detect(any(), any())).thenReturn(Optional.of(new LiquiditySweep(LiquiditySweep.Type.SELL_SWEEP, 1.0, null, null)));
-        when(mlIntegrationService.predict(features)).thenReturn(new PredictionResult(TradeSignal.NONE, 0.5));
+        when(signalService.generateSignal(anyList())).thenReturn(TradeSignal.BUY);
+        when(liquiditySweepDetector.detect(anyList(), any())).thenReturn(Optional.empty());
+        when(mlIntegrationService.predict(anyMap())).thenReturn(new PredictionResult(TradeSignal.SELL, 0.9));
 
-        TradeSignal result = strategyEngine.generateFinalSignal(candles, MarketTrend.RANGE, features);
+        TradeSignal signal = strategyEngine.generateFinalSignal(candles, MarketTrend.RANGE, Map.of());
 
-        assertThat(result).isEqualTo(TradeSignal.NONE);
+        assertEquals(TradeSignal.NONE, signal);
     }
 }

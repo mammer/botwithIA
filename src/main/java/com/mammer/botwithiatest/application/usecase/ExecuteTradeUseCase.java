@@ -31,12 +31,28 @@ public class ExecuteTradeUseCase {
         this.featureExtractionService = featureExtractionService;
     }
 
-    public void execute(String symbol, MarketTrend trend, double equity, double stopLossPips, double stopLossPrice, double takeProfitPrice) {
+    public boolean execute(String symbol, MarketTrend trend, double equity, double stopLossPips, double stopLossPrice, double takeProfitPrice) {
         validateInputs(symbol, trend, equity, stopLossPips, stopLossPrice, takeProfitPrice);
+
         List<Candle> candles = marketDataProvider.fetchLatestCandles(symbol, 200);
         Map<String, Double> features = featureExtractionService.extractLatestFeatures(candles);
         TradeSignal signal = strategyEngine.generateFinalSignal(candles, trend, features);
-        tradingEngine.executeTrade(signal, equity, stopLossPips, stopLossPrice, takeProfitPrice);
+        return tradingEngine.executeTrade(signal, equity, stopLossPips, stopLossPrice, takeProfitPrice);
+    }
+
+    private void validateInputs(String symbol, MarketTrend trend, double equity, double stopLossPips, double stopLossPrice, double takeProfitPrice) {
+        if (symbol == null || symbol.isBlank()) {
+            throw new IllegalArgumentException("Symbol must be provided");
+        }
+        if (trend == null) {
+            throw new IllegalArgumentException("Trend must be provided");
+        }
+        if (equity <= 0) {
+            throw new IllegalArgumentException("Equity must be greater than zero");
+        }
+        if (stopLossPips <= 0 || stopLossPrice <= 0 || takeProfitPrice <= 0) {
+            throw new IllegalArgumentException("Risk parameters must be greater than zero");
+        }
     }
 
     private void validateInputs(String symbol, MarketTrend trend, double equity, double stopLossPips, double stopLossPrice, double takeProfitPrice) {
