@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Trading Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; color: #1c1c1c; }
+        h1 { margin-bottom: 0; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; }
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+        th { background: #f4f4f4; }
+        .metric { background: #f8f9fd; padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px; }
+        .muted { color: #666; font-size: 12px; }
+    </style>
+</head>
+<body>
+<h1>Trade Monitor</h1>
+<p class="muted">Open/closed trades stored in the embedded H2 database. Metrics are updated live from the REST API.</p>
+<div class="grid">
+    <div>
+        <h3>Open Trades</h3>
+        <table id="open-trades">
+            <thead>
+            <tr><th>Symbol</th><th>Side</th><th>Qty</th><th>Entry</th><th>SL</th><th>TP</th></tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+    <div>
+        <h3>Closed Trades</h3>
+        <table id="closed-trades">
+            <thead>
+            <tr><th>Symbol</th><th>Side</th><th>Qty</th><th>Entry</th><th>Exit</th><th>PnL</th></tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+</div>
+<div class="grid" style="margin-top: 20px;">
+    <div class="metric">
+        <h3>Performance</h3>
+        <div id="metrics"></div>
+    </div>
+    <div>
+        <h3>Cumulative PnL</h3>
+        <canvas id="pnlChart" height="200"></canvas>
+    </div>
+</div>
+
+<script>
+async function fetchJson(url) {
+    const res = await fetch(url);
+    return res.json();
+}
+
+function renderTable(tableId, trades) {
+    const body = document.querySelector(`#${tableId} tbody`);
+    body.innerHTML = trades.map(t => `
+        <tr>
+            <td>${t.symbol}</td>
+            <td>${t.side}</td>
+            <td>${t.quantity}</td>
+            <td>${t.entryPrice ?? '-'}</td>
+            <td>${t.exitPrice ?? t.stopLoss ?? '-'}</td>
+            <td>${t.pnl ?? t.takeProfit ?? '-'}</td>
+        </tr>
+    `).join('');
+}
+
+function renderMetrics(metrics) {
+    const container = document.getElementById('metrics');
+    container.innerHTML = `
+        <div><strong>Closed Trades:</strong> ${metrics.closedCount}</div>
+        <div><strong>Win Rate:</strong> ${metrics.winRate}%</div>
+        <div><strong>Average R:</strong> ${metrics.averageR}</div>
+        <div><strong>Cumulative PnL:</strong> ${metrics.cumulativePnl}</div>
+    `;
+}
+
+let pnlChart;
+function renderChart(trades) {
+    const closedTrades = trades.filter(t => t.pnl !== null);
+    const labels = closedTrades.map(t => `${t.symbol} #${t.id}`);
+    let cumulative = 0;
+    const data = closedTrades.map(t => {
+        cumulative += Number(t.pnl);
+        return cumulative;
+    });
+    const ctx = document.getElementById('pnlChart');
+    pnlChart?.destroy();
+    pnlChart = new Chart(ctx, {
+        type: 'line',
+        data: { labels, datasets: [{ label: 'Cumulative PnL', data, borderColor: '#2f80ed', fill: false }]},
+        options: { scales: { y: { beginAtZero: true } } }
+    });
+}
+
+async function refresh() {
+    const [openTrades, closedTrades, metrics, allTrades] = await Promise.all([
+        fetchJson('/api/trades/open'),
+        fetchJson('/api/trades/closed'),
+        fetchJson('/api/metrics'),
+        fetchJson('/api/trades/closed')
+    ]);
+    renderTable('open-trades', openTrades);
+    renderTable('closed-trades', closedTrades);
+    renderMetrics(metrics);
+    renderChart(allTrades);
+}
+
+refresh();
+setInterval(refresh, 5000);
+</script>
+</body>
+</html>
