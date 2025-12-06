@@ -9,4 +9,8 @@ public class MT5BridgeClient {
         System.out.println("Sending order to MT5: " + direction);
         return true;
     }
+
+    public boolean isConnected() {
+        return true;
+    }
 }

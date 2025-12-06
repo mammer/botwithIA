@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  trading-bot:
+    image: eclipse-temurin:21-jdk
+    working_dir: /app
+    command: ["./mvnw", "spring-boot:run"]
+    volumes:
+      - ./:/app
+    ports:
+      - "8080:8080"
+      - "9090:9090"
+    environment:
+      DB_URL: ${DB_URL:-jdbc:h2:mem:tradingbot;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE}
+      DB_USERNAME: ${DB_USERNAME:-sa}
+      DB_PASSWORD: ${DB_PASSWORD:-}
+    tty: true
