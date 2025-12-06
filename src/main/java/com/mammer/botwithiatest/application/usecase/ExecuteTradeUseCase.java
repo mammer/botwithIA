@@ -3,6 +3,7 @@ package com.mammer.botwithiatest.application.usecase;
 import com.mammer.botwithiatest.application.service.FeatureExtractionService;
 import com.mammer.botwithiatest.application.service.TradingEngine;
 import com.mammer.botwithiatest.application.strategy.StrategyEngine;
+import com.mammer.botwithiatest.domaine.exception.DomainException;
 import com.mammer.botwithiatest.domaine.model.Candle;
 import com.mammer.botwithiatest.domaine.model.MarketTrend;
 import com.mammer.botwithiatest.domaine.model.TradeSignal;
@@ -51,6 +52,28 @@ public class ExecuteTradeUseCase {
         }
         if (stopLossPips <= 0 || stopLossPrice <= 0 || takeProfitPrice <= 0) {
             throw new IllegalArgumentException("Risk parameters must be greater than zero");
+        }
+    }
+
+    private void validateInputs(String symbol, MarketTrend trend, double equity, double stopLossPips, double stopLossPrice, double takeProfitPrice) {
+        if (symbol == null || symbol.isBlank()) {
+            throw new DomainException("Symbol must not be empty");
+        }
+
+        if (trend == null) {
+            throw new DomainException("Market trend is required");
+        }
+
+        if (equity <= 0) {
+            throw new DomainException("Equity must be positive");
+        }
+
+        if (stopLossPips <= 0 || Double.isNaN(stopLossPips)) {
+            throw new DomainException("Stop loss pips must be greater than zero");
+        }
+
+        if (stopLossPrice <= 0 || takeProfitPrice <= 0) {
+            throw new DomainException("Stop loss and take profit prices must be positive");
         }
     }
 }

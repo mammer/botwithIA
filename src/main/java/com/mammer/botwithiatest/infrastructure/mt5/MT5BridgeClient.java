@@ -42,4 +42,8 @@ public class MT5BridgeClient {
                 symbol, direction, entryPrice, lotSize, stopLoss, takeProfit, slippage);
         return true;
     }
+
+    public boolean isConnected() {
+        return true;
+    }
 }
