@@ -11,4 +11,9 @@ public class RiskManagementService {
         double riskMoney = equity * riskPercent;
         return riskMoney / stopLossPips;
     }
+
+    public double computePositionSize(double equity, double stopLossPips, double riskPercent) {
+        double riskMoney = equity * riskPercent;
+        return riskMoney / stopLossPips;
+    }
 }
