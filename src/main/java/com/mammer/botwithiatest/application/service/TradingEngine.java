@@ -1,5 +1,6 @@
 package com.mammer.botwithiatest.application.service;
 
+import com.mammer.botwithiatest.domaine.exception.DomainException;
 import com.mammer.botwithiatest.domaine.model.TradeSignal;
 import com.mammer.botwithiatest.infrastructure.config.AppMode;
 import com.mammer.botwithiatest.infrastructure.config.ApplicationStatusService;
