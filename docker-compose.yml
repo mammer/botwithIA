@@ -1,0 +1,17 @@
+version: '3.8'
+services:
+  botwithia:
+    image: maven:3.9-eclipse-temurin-21
+    working_dir: /workspace/app
+    command: ["./mvnw", "spring-boot:run"]
+    volumes:
+      - ./:/workspace/app
+    environment:
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL:-jdbc:h2:mem:tradingdb;DB_CLOSE_DELAY=-1;MODE=PostgreSQL}
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME:-sa}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:-}
+      TRADING_RISK_PERCENT: ${TRADING_RISK_PERCENT:-0.01}
+      TRADING_RISK_MAX_PERCENT: ${TRADING_RISK_MAX_PERCENT:-0.02}
+      TRADING_RISK_MIN_STOP_LOSS_PIPS: ${TRADING_RISK_MIN_STOP_LOSS_PIPS:-1}
+    ports:
+      - "8080:8080"
