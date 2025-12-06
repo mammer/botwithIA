@@ -7,5 +7,6 @@ import java.util.List;
 
 public interface TradingStrategy {
     String getSymbol();
+
     TradeSignal evaluate(List<Candle> candles);
 }

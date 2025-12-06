@@ -2,78 +2,58 @@ package com.mammer.botwithiatest.application.service;
 
 import com.mammer.botwithiatest.domaine.model.SymbolConfig;
 import com.mammer.botwithiatest.domaine.model.TradeSignal;
+import com.mammer.botwithiatest.infrastructure.datasource.MarketDataProvider;
 import com.mammer.botwithiatest.infrastructure.mt5.MT5BridgeClient;
 import org.springframework.stereotype.Service;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 @Service
 public class TradingService {
 
     private final MT5BridgeClient bridgeClient;
-    private final RiskManagementService riskManagementService;
-    private final Map<String, SymbolConfig> symbolConfigs = new HashMap<>();
+    private final MarketDataProvider marketDataProvider;
+    private final SymbolConfig symbolConfig;
 
-    public TradingService(MT5BridgeClient bridgeClient, RiskManagementService riskManagementService) {
+    public TradingService(MT5BridgeClient bridgeClient, MarketDataProvider marketDataProvider, SymbolConfig symbolConfig) {
         this.bridgeClient = bridgeClient;
-        this.riskManagementService = riskManagementService;
-        registerDefaultSymbols();
+        this.marketDataProvider = marketDataProvider;
+        this.symbolConfig = symbolConfig;
     }
 
-    public void registerSymbols(List<SymbolConfig> configs) {
-        configs.forEach(config -> symbolConfigs.put(config.getSymbol(), config));
+    public boolean placeMarketOrder(TradeSignal direction, double stopLoss, double takeProfit) {
+        validateSymbol(symbolConfig.getSymbol());
+        validateSpread();
+        return bridgeClient.sendMarketOrder(
+                symbolConfig.getSymbol(),
+                direction.name(),
+                symbolConfig.getLotSize(),
+                stopLoss,
+                takeProfit,
+                symbolConfig.getSlippage());
     }
 
-    public boolean placeMarketOrder(String symbol, TradeSignal direction, double entryPrice, double stopLoss, double takeProfit,
-                                    double spread, double equity, double stopLossPips) {
-        SymbolConfig config = requireSymbol(symbol);
-        validateDirection(direction);
-        validateSpread(spread, config);
-
-        double lotSize = resolveLotSize(config, equity, stopLossPips);
-        return bridgeClient.sendMarketOrder(symbol, direction.name(), lotSize, stopLoss, takeProfit, config.getSlippage());
+    public boolean placePendingOrder(TradeSignal direction, double entryPrice, double stopLoss, double takeProfit) {
+        validateSymbol(symbolConfig.getSymbol());
+        validateSpread();
+        return bridgeClient.sendPendingOrder(
+                symbolConfig.getSymbol(),
+                direction.name(),
+                entryPrice,
+                symbolConfig.getLotSize(),
+                stopLoss,
+                takeProfit,
+                symbolConfig.getSlippage());
     }
 
-    public boolean placePendingOrder(String symbol, TradeSignal direction, double entryPrice, double stopLoss, double takeProfit,
-                                     double spread, double equity, double stopLossPips) {
-        SymbolConfig config = requireSymbol(symbol);
-        validateDirection(direction);
-        validateSpread(spread, config);
-
-        double lotSize = resolveLotSize(config, equity, stopLossPips);
-        return bridgeClient.sendPendingOrder(symbol, direction.name(), entryPrice, lotSize, stopLoss, takeProfit, config.getSlippage());
-    }
-
-    private SymbolConfig requireSymbol(String symbol) {
-        SymbolConfig config = symbolConfigs.get(symbol);
-        if (config == null) {
-            throw new IllegalArgumentException("Symbol not configured: " + symbol);
-        }
-        return config;
-    }
-
-    private void validateSpread(double spread, SymbolConfig config) {
-        if (spread > config.getMaxSpread()) {
-            throw new IllegalStateException("Spread too high for " + config.getSymbol() + ": " + spread);
+    private void validateSymbol(String symbol) {
+        if (!symbolConfig.getSymbol().equalsIgnoreCase(symbol)) {
+            throw new IllegalArgumentException("Symbol " + symbol + " not supported by current configuration");
         }
     }
 
-    private void validateDirection(TradeSignal direction) {
-        if (direction == TradeSignal.NONE) {
-            throw new IllegalArgumentException("Direction cannot be NONE for an order");
+    private void validateSpread() {
+        double spread = marketDataProvider.fetchCurrentSpread(symbolConfig.getSymbol());
+        if (spread > symbolConfig.getMaxSpread()) {
+            throw new IllegalStateException("Spread too wide to place order: " + spread);
         }
-    }
-
-    private double resolveLotSize(SymbolConfig config, double equity, double stopLossPips) {
-        if (equity > 0 && stopLossPips > 0) {
-            return riskManagementService.computePositionSize(equity, stopLossPips, config.getRiskPerTrade());
-        }
-        return config.getLotSize();
-    }
-
-    private void registerDefaultSymbols() {
-        registerSymbols(List.of(new SymbolConfig("XAUUSD", 0.1, 1.5, 0.5, 0.01)));
     }
 }

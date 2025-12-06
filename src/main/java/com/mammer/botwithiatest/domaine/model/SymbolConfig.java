@@ -1,5 +1,8 @@
 package com.mammer.botwithiatest.domaine.model;
 
+/**
+ * Symbol specific configuration used to validate and size orders.
+ */
 public class SymbolConfig {
     private final String symbol;
     private final double lotSize;

@@ -1,6 +1,7 @@
 package com.mammer.botwithiatest.application.strategy;
 
 import com.mammer.botwithiatest.domaine.model.Candle;
+import com.mammer.botwithiatest.domaine.model.SymbolConfig;
 import com.mammer.botwithiatest.domaine.model.TradeSignal;
 import org.springframework.stereotype.Component;
 
@@ -9,48 +10,44 @@ import java.util.List;
 @Component
 public class MovingAverageCrossoverStrategy implements TradingStrategy {
 
-    private static final String SYMBOL = "XAUUSD";
-    private final int shortPeriod;
-    private final int longPeriod;
+    private static final int SHORT_WINDOW = 20;
+    private static final int LONG_WINDOW = 50;
 
-    public MovingAverageCrossoverStrategy() {
-        this(10, 30);
-    }
+    private final SymbolConfig symbolConfig;
 
-    public MovingAverageCrossoverStrategy(int shortPeriod, int longPeriod) {
-        this.shortPeriod = shortPeriod;
-        this.longPeriod = longPeriod;
+    public MovingAverageCrossoverStrategy(SymbolConfig symbolConfig) {
+        this.symbolConfig = symbolConfig;
     }
 
     @Override
     public String getSymbol() {
-        return SYMBOL;
+        return symbolConfig.getSymbol();
     }
 
     @Override
     public TradeSignal evaluate(List<Candle> candles) {
-        if (candles.size() < longPeriod) {
+        if (candles == null || candles.size() < LONG_WINDOW) {
             return TradeSignal.NONE;
         }
 
-        double shortMA = calculateSma(candles, shortPeriod);
-        double longMA = calculateSma(candles, longPeriod);
+        double shortMa = simpleMovingAverage(candles, SHORT_WINDOW);
+        double longMa = simpleMovingAverage(candles, LONG_WINDOW);
 
-        if (shortMA > longMA) {
+        if (shortMa > longMa) {
             return TradeSignal.BUY;
         }
-        if (shortMA < longMA) {
+        if (shortMa < longMa) {
             return TradeSignal.SELL;
         }
         return TradeSignal.NONE;
     }
 
-    private double calculateSma(List<Candle> candles, int period) {
-        int startIndex = candles.size() - period;
-        double sum = 0;
-        for (int i = startIndex; i < candles.size(); i++) {
-            sum += candles.get(i).getClose();
-        }
-        return sum / period;
+    private double simpleMovingAverage(List<Candle> candles, int window) {
+        return candles
+                .subList(candles.size() - window, candles.size())
+                .stream()
+                .mapToDouble(Candle::getClose)
+                .summaryStatistics()
+                .getAverage();
     }
 }

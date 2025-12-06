@@ -3,55 +3,69 @@ package com.mammer.botwithiatest.application.scheduler;
 import com.mammer.botwithiatest.application.service.TradingService;
 import com.mammer.botwithiatest.application.strategy.TradingStrategy;
 import com.mammer.botwithiatest.domaine.model.Candle;
+import com.mammer.botwithiatest.domaine.model.SymbolConfig;
 import com.mammer.botwithiatest.domaine.model.TradeSignal;
 import com.mammer.botwithiatest.infrastructure.datasource.MarketDataProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
 import java.util.List;
 
-@Component
+@Service
 public class TradingScheduler {
 
-    private static final Logger logger = LoggerFactory.getLogger(TradingScheduler.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(TradingScheduler.class);
 
     private final MarketDataProvider marketDataProvider;
     private final TradingStrategy tradingStrategy;
     private final TradingService tradingService;
+    private final SymbolConfig symbolConfig;
 
     public TradingScheduler(MarketDataProvider marketDataProvider,
                             TradingStrategy tradingStrategy,
-                            TradingService tradingService) {
+                            TradingService tradingService,
+                            SymbolConfig symbolConfig) {
         this.marketDataProvider = marketDataProvider;
         this.tradingStrategy = tradingStrategy;
         this.tradingService = tradingService;
+        this.symbolConfig = symbolConfig;
     }
 
-    @Scheduled(fixedDelay = 60000)
-    public void pollAndTrade() {
-        String symbol = tradingStrategy.getSymbol();
-        List<Candle> candles = marketDataProvider.fetchLatestCandles(symbol, 100);
-
+    @Scheduled(fixedDelayString = "${trading.poll-interval-ms:60000}")
+    public void pollMarketAndTrade() {
+        List<Candle> candles = marketDataProvider.fetchLatestCandles(symbolConfig.getSymbol(), 200);
         if (candles.isEmpty()) {
-            logger.warn("No candles available for {}", symbol);
+            LOGGER.info("No candle data available for {}. Skipping.", symbolConfig.getSymbol());
             return;
         }
 
         TradeSignal signal = tradingStrategy.evaluate(candles);
         if (signal == TradeSignal.NONE) {
-            logger.info("No actionable signal for {}", symbol);
+            LOGGER.info("Strategy returned no actionable signal for {}", symbolConfig.getSymbol());
             return;
         }
 
-        Candle last = candles.get(candles.size() - 1);
-        double spread = Math.max(0.0, last.getHigh() - last.getLow());
-        double stopLoss = signal == TradeSignal.BUY ? last.getClose() - 5 : last.getClose() + 5;
-        double takeProfit = signal == TradeSignal.BUY ? last.getClose() + 10 : last.getClose() - 10;
-        double stopLossPips = Math.abs(last.getClose() - stopLoss);
+        double lastClose = candles.get(candles.size() - 1).getClose();
+        double averageRange = estimateAverageRange(candles, 14);
+        double stopLoss = signal == TradeSignal.BUY ? lastClose - averageRange : lastClose + averageRange;
+        double takeProfit = signal == TradeSignal.BUY ? lastClose + (averageRange * 2) : lastClose - (averageRange * 2);
 
-        logger.info("Executing {} signal for {} with SL {} and TP {}", signal, symbol, stopLoss, takeProfit);
-        tradingService.placeMarketOrder(symbol, signal, last.getClose(), stopLoss, takeProfit, spread, 10_000, stopLossPips);
+        LOGGER.info("Placing {} market order for {} with SL {} and TP {}", signal, symbolConfig.getSymbol(), stopLoss, takeProfit);
+        tradingService.placeMarketOrder(signal, stopLoss, takeProfit);
+    }
+
+    private double estimateAverageRange(List<Candle> candles, int lookback) {
+        int startIndex = Math.max(candles.size() - lookback, 0);
+        double sum = 0;
+        int count = 0;
+        for (int i = startIndex; i < candles.size(); i++) {
+            Candle candle = candles.get(i);
+            sum += candle.getHigh() - candle.getLow();
+            count++;
+        }
+        double averageRange = count == 0 ? 0 : sum / count;
+        return averageRange == 0 ? 1.0 : averageRange;
     }
 }
