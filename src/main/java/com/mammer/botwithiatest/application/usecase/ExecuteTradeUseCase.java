@@ -42,21 +42,6 @@ public class ExecuteTradeUseCase {
 
     private void validateInputs(String symbol, MarketTrend trend, double equity, double stopLossPips, double stopLossPrice, double takeProfitPrice) {
         if (symbol == null || symbol.isBlank()) {
-            throw new IllegalArgumentException("Symbol must be provided");
-        }
-        if (trend == null) {
-            throw new IllegalArgumentException("Trend must be provided");
-        }
-        if (equity <= 0) {
-            throw new IllegalArgumentException("Equity must be greater than zero");
-        }
-        if (stopLossPips <= 0 || stopLossPrice <= 0 || takeProfitPrice <= 0) {
-            throw new IllegalArgumentException("Risk parameters must be greater than zero");
-        }
-    }
-
-    private void validateInputs(String symbol, MarketTrend trend, double equity, double stopLossPips, double stopLossPrice, double takeProfitPrice) {
-        if (symbol == null || symbol.isBlank()) {
             throw new DomainException("Symbol must not be empty");
         }
 
