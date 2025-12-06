@@ -1,0 +1,9 @@
+spring:
+  application:
+    name: BotWithIATest
+
+mt5:
+  server: ${MT5_SERVER:}
+  login: ${MT5_LOGIN:}
+  password: ${MT5_PASSWORD:}
+  account-type: ${MT5_ACCOUNT_TYPE:demo}

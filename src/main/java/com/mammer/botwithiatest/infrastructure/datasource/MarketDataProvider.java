@@ -18,4 +18,9 @@ public class MarketDataProvider {
         // Placeholder returning empty list. Real implementation would hit a live price feed
         return new ArrayList<>();
     }
+
+    public double fetchCurrentSpread(String symbol) {
+        // Stubbed spread request for the symbol. Real implementation would query broker quotes.
+        return 0.1;
+    }
 }
