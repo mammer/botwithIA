@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Trading Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        h1, h2 { color: #333; }
+        table { border-collapse: collapse; width: 100%; margin-bottom: 16px; }
+        th, td { border: 1px solid #ddd; padding: 8px; }
+        th { background: #f5f5f5; text-align: left; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; }
+        .card { border: 1px solid #e1e1e1; border-radius: 8px; padding: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .form-row { display: flex; gap: 8px; flex-wrap: wrap; }
+        label { display: block; font-weight: bold; margin-top: 8px; }
+        input, select { padding: 6px; width: 100%; box-sizing: border-box; }
+        button { margin-top: 10px; padding: 8px 12px; background: #0b5ed7; color: #fff; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #0a53be; }
+    </style>
+</head>
+<body>
+<h1>Trading Journal</h1>
+<div class="grid">
+    <div class="card">
+        <h2>Open a Trade</h2>
+        <div class="form-row">
+            <div style="flex: 1 1 120px;">
+                <label>Symbol</label>
+                <input id="symbol" value="EURUSD">
+            </div>
+            <div style="flex: 1 1 120px;">
+                <label>Side</label>
+                <select id="side">
+                    <option value="BUY">BUY</option>
+                    <option value="SELL">SELL</option>
+                </select>
+            </div>
+            <div style="flex: 1 1 120px;">
+                <label>Size</label>
+                <input id="size" type="number" value="1" step="0.01">
+            </div>
+        </div>
+        <div class="form-row">
+            <div style="flex: 1 1 120px;">
+                <label>Entry Price</label>
+                <input id="entryPrice" type="number" value="1.1000" step="0.0001">
+            </div>
+            <div style="flex: 1 1 120px;">
+                <label>Stop Loss</label>
+                <input id="stopLoss" type="number" value="1.0950" step="0.0001">
+            </div>
+            <div style="flex: 1 1 120px;">
+                <label>Take Profit</label>
+                <input id="takeProfit" type="number" value="1.1100" step="0.0001">
+            </div>
+        </div>
+        <button onclick="openTrade()">Submit Trade</button>
+    </div>
+    <div class="card">
+        <h2>Close a Trade</h2>
+        <div class="form-row">
+            <div style="flex: 1 1 120px;">
+                <label>Trade ID</label>
+                <input id="closeId" type="number" min="1">
+            </div>
+            <div style="flex: 1 1 120px;">
+                <label>Exit Price</label>
+                <input id="exitPrice" type="number" value="1.1050" step="0.0001">
+            </div>
+        </div>
+        <button onclick="closeTrade()">Close Trade</button>
+    </div>
+</div>
+
+<div class="grid">
+    <div class="card">
+        <h2>Metrics</h2>
+        <p>Total trades: <span id="totalTrades">0</span></p>
+        <p>Winning trades: <span id="winningTrades">0</span></p>
+        <p>Win rate: <span id="winRate">0%</span></p>
+        <p>Average R: <span id="averageR">0</span></p>
+        <p>Cumulative PnL: <span id="cumulativePnl">0</span></p>
+    </div>
+    <div class="card">
+        <h2>Cumulative PnL</h2>
+        <canvas id="pnlChart" height="120"></canvas>
+    </div>
+</div>
+
+<h2>Open Trades</h2>
+<table id="openTradesTable">
+    <thead><tr><th>ID</th><th>Symbol</th><th>Side</th><th>Size</th><th>Entry</th><th>SL</th><th>TP</th><th>Opened</th></tr></thead>
+    <tbody></tbody>
+</table>
+
+<h2>Closed Trades</h2>
+<table id="closedTradesTable">
+    <thead><tr><th>ID</th><th>Symbol</th><th>Side</th><th>Size</th><th>Entry</th><th>Exit</th><th>PnL</th><th>R</th><th>Closed</th></tr></thead>
+    <tbody></tbody>
+</table>
+
+<script>
+    async function fetchJson(url, options = {}) {
+        const response = await fetch(url, {
+            headers: { 'Content-Type': 'application/json' },
+            ...options
+        });
+        if (!response.ok) {
+            const error = await response.text();
+            throw new Error(error || 'Request failed');
+        }
+        return response.json();
+    }
+
+    async function openTrade() {
+        const payload = {
+            symbol: document.getElementById('symbol').value,
+            side: document.getElementById('side').value,
+            size: parseFloat(document.getElementById('size').value),
+            entryPrice: parseFloat(document.getElementById('entryPrice').value),
+            stopLoss: parseFloat(document.getElementById('stopLoss').value),
+            takeProfit: parseFloat(document.getElementById('takeProfit').value)
+        };
+        await fetchJson('/api/trades', { method: 'POST', body: JSON.stringify(payload) });
+        reloadData();
+    }
+
+    async function closeTrade() {
+        const tradeId = document.getElementById('closeId').value;
+        if (!tradeId) {
+            alert('Enter a trade ID to close');
+            return;
+        }
+        const payload = { exitPrice: parseFloat(document.getElementById('exitPrice').value) };
+        await fetchJson(`/api/trades/${tradeId}/close`, { method: 'POST', body: JSON.stringify(payload) });
+        reloadData();
+    }
+
+    async function reloadData() {
+        const [openTrades, closedTrades, metrics] = await Promise.all([
+            fetchJson('/api/trades/open'),
+            fetchJson('/api/trades/closed'),
+            fetchJson('/api/trades/metrics')
+        ]);
+        renderTrades('openTradesTable', openTrades, true);
+        renderTrades('closedTradesTable', closedTrades, false);
+        renderMetrics(metrics);
+        renderChart(closedTrades);
+    }
+
+    function renderTrades(tableId, trades, isOpen) {
+        const tbody = document.querySelector(`#${tableId} tbody`);
+        tbody.innerHTML = '';
+        trades.forEach(trade => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = isOpen ?
+                `<td>${trade.id}</td><td>${trade.symbol}</td><td>${trade.side}</td><td>${trade.size}</td><td>${trade.entryPrice}</td><td>${trade.stopLoss}</td><td>${trade.takeProfit}</td><td>${trade.openedAt || ''}</td>` :
+                `<td>${trade.id}</td><td>${trade.symbol}</td><td>${trade.side}</td><td>${trade.size}</td><td>${trade.entryPrice}</td><td>${trade.exitPrice}</td><td>${trade.pnl.toFixed(2)}</td><td>${trade.riskReward ? trade.riskReward.toFixed(2) : '0'}</td><td>${trade.closedAt || ''}</td>`;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function renderMetrics(metrics) {
+        document.getElementById('totalTrades').textContent = metrics.totalTrades;
+        document.getElementById('winningTrades').textContent = metrics.winningTrades;
+        document.getElementById('winRate').textContent = `${(metrics.winRate * 100).toFixed(1)}%`;
+        document.getElementById('averageR').textContent = metrics.averageR.toFixed(2);
+        document.getElementById('cumulativePnl').textContent = metrics.cumulativePnl.toFixed(2);
+    }
+
+    let chart;
+    function renderChart(closedTrades) {
+        const ctx = document.getElementById('pnlChart').getContext('2d');
+        let cumulative = 0;
+        const labels = [];
+        const values = [];
+        closedTrades.sort((a, b) => new Date(a.closedAt) - new Date(b.closedAt)).forEach(trade => {
+            cumulative += trade.pnl;
+            labels.push(trade.closedAt || '');
+            values.push(cumulative);
+        });
+        if (chart) {
+            chart.destroy();
+        }
+        chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels,
+                datasets: [{
+                    label: 'Cumulative PnL',
+                    data: values,
+                    borderColor: '#0b5ed7',
+                    backgroundColor: 'rgba(11,94,215,0.1)',
+                    tension: 0.25,
+                    fill: true
+                }]
+            },
+            options: { scales: { y: { beginAtZero: true } } }
+        });
+    }
+
+    reloadData().catch(console.error);
+</script>
+</body>
+</html>
